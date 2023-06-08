@@ -83,23 +83,22 @@ pub fn getModule(comptime prefix_path: []const u8) std.build.Module {
 }
 
 /// prefix_path is used to add package paths. It should be the the same path used to include this build file
-pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, _: std.build.Target, lib_type: LibType, comptime prefix_path: []const u8) void {
-    const optimize = b.standardOptimizeOption(.{});
+pub fn linkArtifact(b: *Builder, artifact: *std.build.LibExeObjStep, target: std.zig.CrossTarget, optimize: std.builtin.Mode, lib_type: LibType, comptime prefix_path: []const u8) void {
     switch (lib_type) {
         .static => {
-            const lib = b.addStaticLibrary(.{ .name = "ecs", .root_source_file = "ecs.zig", .optimize = optimize });
-            lib.install();
+            const lib = b.addStaticLibrary(.{ .name = "ecs", .root_source_file = .{ .path = prefix_path ++ "/src/ecs.zig" }, .optimize = optimize, .target = target });
+            b.installArtifact(lib);
 
             artifact.linkLibrary(lib);
         },
         .dynamic => {
-            const lib = b.addSharedLibrary(.{ .name = "ecs", .root_source_file = "ecs.zig", .optimize = optimize });
-            lib.install();
+            const lib = b.addSharedLibrary(.{ .name = "ecs", .root_source_file = .{ .path = prefix_path ++ "/src/ecs.zig" }, .optimize = optimize, .target = target });
+            b.installArtifact(lib);
 
             artifact.linkLibrary(lib);
         },
         else => {},
     }
 
-    artifact.addModule(getModule(prefix_path));
+    artifact.addAnonymousModule("ecs", .{ .source_file = .{ .path = prefix_path ++ "/src/ecs.zig" } });
 }
